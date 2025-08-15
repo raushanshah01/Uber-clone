@@ -1,51 +1,80 @@
-# User Registration Endpoint
+# User Registration & Login Endpoints
 
-## Endpoint
+## POST /user/register
 
-POST /user/register
+Description
+- Registers a new user and returns an authentication token plus the created user record.
 
-## Description
-
-Registers a new user and returns an authentication token plus the created user record. Request body must include a fullname object (with firstname required), email, and password. Validation is applied on the incoming fields.
-
-## Request Headers
-
+Request Headers
 - Content-Type: application/json
 
-## Request Body (JSON)
-
+Request Body (JSON)
 ```json
 {
   "fullname": {
     "firstname": "John", // required, string, min length 3
-    "lastname": "Doe" // optional, string, min length 3 if provided
+    "lastname": "Doe"    // optional, string, min length 3 if provided
   },
   "email": "john@example.com", // required, valid email
-  "password": "secret123" // required, string, min length 6
+  "password": "secret123"      // required, string, min length 6
 }
 ```
 
-## Validation Rules
-
+Validation Rules
 - fullname.firstname: required, string, minimum 3 characters
 - fullname.lastname: optional, string, minimum 3 characters if present
 - email: required, must be a valid email address
 - password: required, minimum 6 characters
 
-(These rules are enforced via express-validator and the Mongoose schema.)
-
-## Success Response
-
+Success Response
 - Status: 201 Created
-- Body (JSON):
-
+- Body:
 ```json
 {
   "token": "<JWT_TOKEN>",
   "user": {
     "_id": "<USER_ID>",
+    "fullname": { "firstname": "John", "lastname": "Doe" },
+    "email": "john@example.com",
+    "socketId": null
+  }
+}
+```
+
+Error Responses
+- 400 Bad Request — Validation errors or missing fields
+- 409 Conflict — Email already registered (duplicate key)
+- 500 Internal Server Error — Unexpected server/database error
+
+Example cURL
+```bash
+curl -X POST http://localhost:3000/user/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullname": { "firstname": "John", "lastname": "Doe" },
+    "email": "john@example.com",
+    "password": "secret123"
+  }'
+```
+
+## GET /user/profile
+
+Description
+- Returns the authenticated user's profile information
+- Protected route - requires valid JWT token
+
+Request Headers
+- Authorization: Bearer <JWT_TOKEN>
+
+Success Response
+- Status: 200 OK
+- Body:
+```json
+{
+  "user": {
+    "_id": "<USER_ID>",
     "fullname": {
-      "firstname": "John",  
+      "firstname": "John",
       "lastname": "Doe"
     },
     "email": "john@example.com",
@@ -54,41 +83,134 @@ Registers a new user and returns an authentication token plus the created user r
 }
 ```
 
-## Error Responses
+Error Responses
+- 401 Unauthorized - Invalid/missing token
+```json
+{
+  "message": "No token, authorization denied"
+}
+```
+- 403 Forbidden - Token blacklisted/expired
+```json
+{
+  "message": "Token is not valid"
+}
+```
 
-- 400 Bad Request — Validation errors or missing fields
+Example cURL
+```bash
+curl -X GET http://localhost:3000/user/profile \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
 
+## GET /user/logout
+
+Description
+- Logs out the user by invalidating their JWT token
+- Protected route - requires valid JWT token
+- Clears the token cookie and adds token to blacklist
+
+Request Headers
+- Authorization: Bearer <JWT_TOKEN>
+- Cookie: token=<JWT_TOKEN> (optional)
+
+Success Response
+- Status: 200 OK
+- Body:
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+Error Responses
+- 401 Unauthorized - Invalid/missing token
+```json
+{
+  "message": "No token, authorization denied"
+}
+```
+- 500 Internal Server Error - Failed to blacklist token
+
+Example cURL
+```bash
+curl -X GET http://localhost:3000/user/logout \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  --cookie "token=<JWT_TOKEN>"
+```
+
+## POST /user/login
+
+Description
+- Authenticates user credentials and returns JWT token
+- Sets token in cookies and response body
+
+Request Headers
+- Content-Type: application/json
+
+Request Body
+```json
+{
+  "email": "john@example.com",    // required
+  "password": "secret123"         // required
+}
+```
+
+Validation Rules
+- email: must be valid email format
+- password: minimum 6 characters
+
+Success Response
+- Status: 200 OK
+- Sets Cookie: token=<JWT_TOKEN>
+- Body:
+```json
+{
+  "token": "<JWT_TOKEN>",
+  "user": {
+    "_id": "<USER_ID>",
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "email": "john@example.com",
+    "socketId": null
+  }
+}
+```
+
+Error Responses
+- 400 Bad Request - Validation errors
 ```json
 {
   "errors": [
-    { "msg": "Invalid email", "param": "email", "location": "body" },
-    ...
+    {
+      "msg": "Invalid email",
+      "param": "email",
+      "location": "body"
+    }
   ]
 }
 ```
-
-- 409 Conflict — Email already registered (duplicate key)
-
+- 401 Unauthorized - Invalid credentials
 ```json
 {
-  "error": "Email already in use"
+  "message": "Invalid credentials"
+}
+```
+- 404 Not Found - User not found
+```json
+{
+  "message": "User not found"
 }
 ```
 
-- 500 Internal Server Error — Unexpected server/database error
-
-```json
-{
-  "error": "Internal server error"
-}
-```
-
-## Example cURL
-
+Example cURL
 ```bash
-curl -X POST http://localhost:3000/user/register \
+curl -X POST http://localhost:3000/user/login \
   -H "Content-Type: application/json" \
   -d '{
-    "fullname": { "firstname": "John", "lastname": "Doe" },
     "email": "john@example.com",
+    "password": "secret123"
+  }'
 ```
