@@ -214,3 +214,82 @@ curl -X POST http://localhost:3000/user/login \
     "password": "secret123"
   }'
 ```
+
+# Captain Registration Endpoint
+
+## POST /captain/register
+
+**Description:**  
+Registers a new captain (driver) with personal and vehicle details.
+
+**Request Headers:**  
+- Content-Type: application/json
+
+**Request Body Example:**
+```json
+{
+  "fullname": {
+    "firstname": "Jane",      // required, min 3 chars
+    "lastname": "Smith"       // optional, min 3 chars
+  },
+  "email": "jane@captain.com", // required, valid email
+  "password": "secret123",     // required, min 6 chars
+  "vehicle": {
+    "color": "Black",          // required, min 3 chars
+    "plate": "XYZ123",         // required, min 3 chars
+    "capacity": 4,             // required, min 1
+    "vehicleType": "car"       // required, one of: car, motorcycle, auto
+  }
+}
+```
+
+**Validation Rules:**
+- `fullname.firstname`: required, min 3 characters
+- `email`: required, valid email
+- `password`: required, min 6 characters
+- `vehicle.color`: required, min 3 characters
+- `vehicle.plate`: required, min 3 characters
+- `vehicle.capacity`: required, integer ≥ 1
+- `vehicle.vehicleType`: required, must be "car", "motorcycle", or "auto"
+
+**Success Response:**  
+- Status: 201 Created
+- Body:
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "<CAPTAIN_ID>",
+    "fullname": { "firstname": "Jane", "lastname": "Smith" },
+    "email": "jane@captain.com",
+    "vehicle": {
+      "color": "Black",
+      "plate": "XYZ123",
+      "capacity": 4,
+      "vehicleType": "car"
+    }
+  }
+}
+```
+
+**Error Responses:**
+- 400 Bad Request — Validation errors or missing fields
+- 409 Conflict — Email already registered
+- 500 Internal Server Error — Unexpected error
+
+**Example cURL:**
+```bash
+curl -X POST http://localhost:3000/captain/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullname": { "firstname": "Jane", "lastname": "Smith" },
+    "email": "jane@captain.com",
+    "password": "secret123",
+    "vehicle": {
+      "color": "Black",
+      "plate": "XYZ123",
+      "capacity": 4,
+      "vehicleType": "car"
+    }
+  }'
+```
