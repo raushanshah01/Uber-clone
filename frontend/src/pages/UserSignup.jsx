@@ -1,42 +1,51 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { UserDataContext } from "../context/UserContext";  // ✅ fixed spelling
 
 const UserSignup = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userData, setUserData] = useState({});
 
-  const submitHandler = (e) => {
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserDataContext);  // ✅ fixed
+
+  const submitHandler = async (e) => {
     e.preventDefault();
-    // console.log("Email:", email);
-    // console.log("Password:", password);
 
-    // Here you can add your API call or signup logic
-    setFirstName("");
-
-    setLastName("");
-    setEmail("");
-    setPassword("");
-    setUserData({
-      fullName:{
-        firstName: firstName,
-        lastName: lastName
+    const newUser = {
+      fullname: {
+        firstname: firstName,
+        lastname: lastName,
       },
       email: email,
       password: password,
-    });
+    };
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/users/register`,
+      newUser
+    );
+
+    if (response.status === 201) {
+      setUser(response.data.user);  // ✅ updates global context
+      localStorage.setItem("token", response.data.token);
+      navigate("/home");
+    }
+
+    // clear form
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPassword("");
   };
 
   return (
     <div>
       <div className="p-7 flex flex-col h-screen justify-between">
-        <form
-          onSubmit={(e) => {
-            submitHandler(e);
-          }}
-        >
+        <form onSubmit={submitHandler}>
           <img
             className="w-16 mb-10"
             src="https://icon2.cleanpng.com/lnd/20241123/fe/01a0c7a4bc31fd14d50f86a45d55c0.webp"
@@ -46,36 +55,28 @@ const UserSignup = () => {
           <h3 className="text-lg font-medium mb-2">What's your Name</h3>
           <div className="flex gap-4 mb-6">
             <input
-              className="bg-[#eeeeee] w-1/2 rounded px-4 py-2 border  text-lg placeholder:text-base"
+              className="bg-[#eeeeee] w-1/2 rounded px-4 py-2 border text-lg placeholder:text-base"
               value={firstName}
-              onChange={(e) => {
-                setFirstName(e.target.value);
-              }}
+              onChange={(e) => setFirstName(e.target.value)}
               type="text"
               placeholder="First name"
               required
             />
             <input
-              className="bg-[#eeeeee] w-1/2 rounded px-4 py-2 border  text-lg placeholder:text-base"
+              className="bg-[#eeeeee] w-1/2 rounded px-4 py-2 border text-lg placeholder:text-base"
               value={lastName}
-              onChange={(e) => {
-                setLastName(e.target.value);
-              }}
+              onChange={(e) => setLastName(e.target.value)}
               type="text"
               placeholder="Last name"
               required
             />
           </div>
 
-          <h3 className="text-lg font-medium mb-2">
-            What's your email & number
-          </h3>
+          <h3 className="text-lg font-medium mb-2">What's your email & number</h3>
           <input
             className="bg-[#eeeeee] mb-6 rounded px-4 py-2 border text-lg placeholder:text-base"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             type="email"
             placeholder="email@gmail.com"
             required
@@ -83,11 +84,9 @@ const UserSignup = () => {
 
           <h3 className="text-lg font-medium mb-2">Enter your password</h3>
           <input
-            className="bg-[#eeeeee] mb-6 rounded px-4 py-2 border  text-lg placeholder:text-base"
+            className="bg-[#eeeeee] mb-6 rounded px-4 py-2 border text-lg placeholder:text-base"
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
+            onChange={(e) => setPassword(e.target.value)}
             type="password"
             placeholder="password"
             required
@@ -97,7 +96,7 @@ const UserSignup = () => {
             type="submit"
             className="bg-[#111] text-[#fff] font-semibold mb-2 rounded px-4 py-2 w-full text-lg"
           >
-            Login
+            Create account
           </button>
 
           <p className="text-center">
